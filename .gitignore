@@ -1,0 +1,73 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual Environment
+venv/
+ENV/
+env/
+.venv/
+
+# Environment variables
+.env
+.env.*
+
+# Flask
+instance/
+.webassets-cache
+
+# MongoDB
+data/
+db/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS specific
+.DS_Store
+Thumbs.db
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+
+# Temporary files
+tmp/
+temp/
+.pytest_cache/
+
+# PDF/resume uploads
+uploads/
+resumes/
+
+# Production files
+*.pem
+*.key
+*.crt
+
+# Local configuration files
+config.local.py
+config.dev.py

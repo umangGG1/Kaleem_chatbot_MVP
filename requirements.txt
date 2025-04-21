@@ -1,0 +1,10 @@
+# requirements.txt
+flask==2.3.3
+flask-cors==4.0.0
+python-dotenv==1.0.0
+pymongo==4.5.0
+langchain==0.0.286
+openai==0.28.1
+pypdf==3.15.1
+azure-identity==1.13.0
+gunicorn==21.2.0
