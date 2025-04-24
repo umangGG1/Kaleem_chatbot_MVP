@@ -17,7 +17,7 @@ import json
 # Load environment variables
 load_dotenv()
 
-app = Flask(__name__)
+app = Flask(__name__, static_folder='static', static_url_path='/static')
 CORS(app)
 app.secret_key = os.getenv("SECRET_KEY", "your-secret-key")
 
@@ -123,7 +123,7 @@ def generate_contact_info_question(user_name, contact_info):
         missing.append("phone number")
     
     missing_str = " and ".join(missing)
-    return f"Thanks {user_name}! I couldn't find your {missing_str} in your resume. Could you please provide that information?"
+    return f"Thanks {user_name}! I couldn't find your {missing_str} in your resume. Your contact info is missing. Please provide your email and phone number below:"
 
 def generate_linkedin_question(user_name):
     """Generate a personalized question about LinkedIn profile"""
@@ -556,8 +556,75 @@ def upload_resume():
 @app.route("/", methods=["GET"])
 def index():
     """Serve the main HTML page"""
-    return send_from_directory('static', 'index.html')
+    return send_from_directory('.', 'static/index.html')
 
+@app.route('/static/<path:path>')
+def send_static(path):
+    return send_from_directory('static', path)
+
+@app.route("/api/submit-contact", methods=["POST"])
+def submit_contact():
+    """Handle contact information submission"""
+    try:
+        # Get JSON data from the request
+        data = request.json
+        if not data:
+            return jsonify({"error": "No data provided"}), 400
+
+        user_id = data.get("user_id")
+        email = data.get("email")
+        phone = data.get("phone")
+
+        # Validate inputs
+        if not user_id or not email or not phone:
+            return jsonify({"error": "Missing required fields: user_id, email, or phone"}), 400
+
+        # Validate email format
+        import re
+        email_regex = r'^[^\s@]+@[^\s@]+\.[^\s@]+$'
+        if not re.match(email_regex, email):
+            return jsonify({"error": "Invalid email format"}), 400
+
+        # Validate phone format (align with frontend regex)
+        phone_regex = r'^[\+]?[(]?[0-9]{3}[)]?[-\s\.]?[0-9]{3}[-\s\.]?[0-9]{4}$'
+        if not re.match(phone_regex, phone):
+            return jsonify({"error": "Invalid phone format"}), 400
+
+        # Check if user exists
+        if user_id not in user_data:
+            return jsonify({"error": "User not found"}), 404
+
+        # Update user data with contact information
+        user_data[user_id]["contact_info"]["email"] = email
+        user_data[user_id]["contact_info"]["phone"] = phone
+
+        # Update database
+        update_user_data(user_id, {
+            "contact_info": {
+                "email": email,
+                "phone": phone
+            },
+            "updated_at": datetime.now()
+        })
+
+        # Move to LinkedIn question
+        user_data[user_id]["state"] = STATES["ASK_LINKEDIN"]
+        response = generate_linkedin_question(user_data[user_id].get("name", ""))
+
+        # Calculate completion percentage
+        completion_percentage = calculate_completion_percentage(user_data[user_id])
+
+        # Store chat in history (construct message to match frontend)
+        message = f"Email: {email}\nPhone: {phone}"
+        store_chat_history(user_id, message, response)
+
+        return jsonify({
+            "response": response,
+            "completion_percentage": completion_percentage
+        })
+
+    except Exception as e:
+        return jsonify({"error": f"An error occurred: {str(e)}"}), 500
 if __name__ == "__main__":
     # Ensure static folder exists
     if not os.path.exists('static'):
